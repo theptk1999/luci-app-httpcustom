@@ -35,7 +35,7 @@ jobs:
         wget "$BASE_URL/$SDK_FILE"
         tar -xf "$SDK_FILE"
         mv openwrt-sdk-*/ openwrt-sdk/
-        
+
     - name: Prepare Package & Update Feeds
       run: |
         # สร้างโฟลเดอร์ package และย้ายโค้ดของเราเข้าไป
