@@ -1,0 +1,66 @@
+#!/bin/sh
+# HTTP Custom Core Engine - Explicit Protocol Routing
+
+LOG_FILE="/var/log/httpcustom.log"
+log() { echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> $LOG_FILE; }
+
+# 1. อ่านค่าจาก UCI Configuration
+ENABLED=$(uci -q get httpcustom.main.enabled)
+[ "$ENABLED" != "1" ] && exit 0
+
+PROTO=$(uci -q get httpcustom.@profile[0].proto)
+MODE=$(uci -q get httpcustom.@profile[0].mode)
+SERVER=$(uci -q get httpcustom.@profile[0].server)
+PORT=$(uci -q get httpcustom.@profile[0].port)
+PAYLOAD=$(uci -q get httpcustom.@profile[0].payload)
+SNI=$(uci -q get httpcustom.@profile[0].sni)
+
+log "Starting HTTP Custom Core..."
+log "Target: $SERVER:$PORT | Protocol: $PROTO | Mode: $MODE"
+
+# 2. Kernel & Hardware Optimization สำหรับ ARM64
+# ขยายขนาด TCP Buffer มารองรับ Throughput ระดับ 5G และลดภาระ CPU
+sysctl -w net.ipv4.tcp_rmem="8192 262144 33554432" >/dev/null
+sysctl -w net.ipv4.tcp_wmem="8192 262144 33554432" >/dev/null
+sysctl -w net.ipv4.tcp_mtu_probing=1 >/dev/null
+
+# 3. Protocol Routing Logic (การสร้างท่อ)
+if [ "$PROTO" = "ssh" ]; then
+    USER=$(uci -q get httpcustom.@profile[0].username)
+    PASS=$(uci -q get httpcustom.@profile[0].password)
+    
+    if [ "$MODE" = "payload" ]; then
+        log "Starting Payload Injector (Local Port 8989)..."
+        # สั่งรัน Python Injector ไว้เบื้องหลัง
+        python3 /usr/bin/httpcustom_payload.py "$SERVER" "$PORT" "$PAYLOAD" &
+        sleep 2
+        log "Connecting SSH via Injector..."
+        # เชื่อมต่อ SSH ผ่าน Injector ภายในเครื่อง (No Magic)
+        sshpass -p "$PASS" ssh -o ProxyCommand="nc 127.0.0.1 8989" -N -D 1080 "$USER@$SERVER" &
+    fi
+
+elif [ "$PROTO" = "vless" ]; then
+    UUID=$(uci -q get httpcustom.@profile[0].uuid)
+    log "Generating Xray Configuration for VLESS+SNI Bug Host ($SNI)..."
+    
+    # สร้างไฟล์ Config ของ Xray แบบ Explicit JSON
+    cat > /tmp/xray_custom.json <<EOF
+{
+  "inbounds": [{"port": 1080, "listen": "127.0.0.1", "protocol": "socks"}],
+  "outbounds": [{
+    "protocol": "vless",
+    "settings": { "vnext": [{ "address": "$SERVER", "port": $PORT, "users": [{"id": "$UUID", "encryption": "none"}] }] },
+    "streamSettings": {
+      "network": "ws",
+      "security": "tls",
+      "tlsSettings": { "serverName": "$SNI", "allowInsecure": true },
+      "wsSettings": { "path": "/" }
+    }
+  }]
+}
+EOF
+    log "Starting Xray Core..."
+    xray run -c /tmp/xray_custom.json &
+fi
+
+log "Tunnel established. Redirection active."

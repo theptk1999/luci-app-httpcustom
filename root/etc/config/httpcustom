@@ -1,0 +1,12 @@
+config global 'main'
+	option enabled '0'
+	option dns_server '1.1.1.1'
+
+config profile
+	option proto 'ssh'
+	option server '128.199.1.1'
+	option port '22'
+	option username 'ssh_user'
+	option password 'ssh_pass'
+	option payload 'GET http://line.me/ HTTP/1.1\r\nHost: line.me\r\n\r\n'
+	option sni 'line.me'

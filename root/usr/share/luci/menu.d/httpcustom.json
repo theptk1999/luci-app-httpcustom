@@ -1,0 +1,21 @@
+{
+	"admin/services/httpcustom": {
+		"title": "HTTP Custom",
+		"action": {
+			"type": "view",
+			"path": "httpcustom/main"
+		},
+		"order": 30,
+		"depends": {
+			"acl": [ "luci-app-httpcustom" ]
+		}
+	},
+	"admin/services/httpcustom/logs": {
+		"title": "Logs",
+		"action": {
+			"type": "view",
+			"path": "httpcustom/logs"
+		},
+		"order": 35
+	}
+}
