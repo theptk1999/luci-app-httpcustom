@@ -19,13 +19,13 @@ jobs:
 
     - name: Fetch Latest OpenWrt SDK (MediaTek Filogic)
       run: |
-        # Core Logic: ใช้รุ่น Stable 25.12.4
-        BASE_URL="https://downloads.openwrt.org/releases/25.12.4/targets/mediatek/filogic"
+        # Core Logic: ใช้รุ่น Stable 25.12.2 ที่มี Endpoint อยู่จริง
+        BASE_URL="https://downloads.openwrt.org/releases/25.12.2/targets/mediatek/filogic"
         
         # ดึงชื่อไฟล์และตัดช่องว่าง/ดอกจันออกให้สะอาด
         SDK_FILE=$(curl -s "$BASE_URL/sha256sums" | grep "openwrt-sdk" | grep "tar.xz" | awk '{print $2}' | sed 's/*//g')
         
-        # Explicit Logic: ตรวจสอบความถูกต้องก่อนดาวน์โหลด ป้องกันโหลด index.html มามั่วๆ
+        # Explicit Logic: ตรวจสอบความถูกต้องก่อนดาวน์โหลด
         if [ -z "$SDK_FILE" ]; then
           echo "Fatal Error: Cannot resolve SDK filename from $BASE_URL"
           exit 1
