@@ -51,10 +51,11 @@ jobs:
         cd openwrt-sdk
         # บังคับ Compile เฉพาะแพ็กเกจของเราเพื่อประหยัดเวลา
         make package/luci-app-httpcustom/compile V=s
-
-    - name: Upload Artifact (.apk)
+        
+    - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: luci-app-httpcustom-bpi-r4
-        path: openwrt-sdk/bin/packages/*/base/luci-app-httpcustom_*.apk
+        # ใช้เครื่องหมาย ** เพื่อค้นหาในทุกโฟลเดอร์ย่อย และ *.*pk เพื่อรองรับทั้ง .apk และ .ipk
+        path: openwrt-sdk/bin/packages/**/luci-app-httpcustom_*.*pk
         retention-days: 7
